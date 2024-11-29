@@ -13,13 +13,14 @@ location_tolerance = 0.002 # Location uncertainty, +/- 2mm
 mass_tolerance = 0.1 # Mass uncertainity, +/- 0.1kg
 
 def x_cp(x_data, location_tolerance):  # Ref "The Theoretical Prediction of the Center of Pressure", James Barrowman
-
     # Assume small angles of attack (< 10 deg)
 
+    x_data = [1.2, 6] # Only the nosecone, body, and fins contribute to CP
     N = np.size(x_data)
 
     x_with_tolerance = x_data + np.random.uniform(low=-location_tolerance, high=location_tolerance, size=N)
-    rocket_length = x_with_tolerance[-1]
+    rocket_length = np.sum(x_with_tolerance)
+    # rocket_length = x_with_tolerance[-1]
 
     # Nose
     CNalpha_nose = 2 # Coefficient of Normal Force W.R.T. AoA for an ogive nosecone
