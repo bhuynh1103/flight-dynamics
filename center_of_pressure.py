@@ -57,27 +57,26 @@ def x_cp(x_data, location_tolerance):
     xbar_fins = xf + delta_xf # CP location for fins
 
     # Full Rocket
-    CNalpha = CNalpha_nose + CNalpha_body + CNalpha_fins
-    xbar = ((CNalpha_nose*xbar_nose) + (CNalpha_body*xbar_body) + (CNalpha_fins*xbar_fins)) / CNalpha
+    CNalpha = CNalpha_nose + CNalpha_body + CNalpha_fins 
+    xbar = ((CNalpha_nose*xbar_nose) + (CNalpha_body*xbar_body) + (CNalpha_fins*xbar_fins)) / CNalpha # CP location for rocket
 
     # More Parameters
-    S_ref = np.pi * body_R**2
-    cp_moment = (xbar_fins**2 * CNalpha_fins + + xbar_body**2 * CNalpha_body + xbar_nose**2 * CNalpha_nose) / CNalpha
+    S_ref = np.pi * body_R**2 # Reference surface area
+    aero_moment = (xbar_fins**2 * CNalpha_fins + + xbar_body**2 * CNalpha_body + xbar_nose**2 * CNalpha_nose) / CNalpha # Aerodynamic pitching moment
 
-    return (xbar, CNalpha, S_ref, cp_moment)
+    return (xbar, CNalpha, S_ref, aero_moment)
 
 def main():
-    print(x_cp(x_data=location, location_tolerance=x_tolerance))
-        # N = 1000
-        # x_cp_list = np.array([])
+    # print(x_cp(x_data=location, location_tolerance=x_tolerance))
+    N = 1000
+    x_cp_list = np.array([])
+    for i in range(N):
+        get_xcp = x_cp(x_data=location, location_tolerance=x_tolerance)
+        x_cp_list = np.append(x_cp_list, get_xcp[0])
 
-        # for i in range(N):
-        #     get_xcp = x_cp(x_data=location, location_tolerance=x_tolerance)
-        #     x_cp_list = np.append(x_cp_list, get_xcp[0])
-
-        # fig, ax = plt.subplots()
-        # ax.hist(x_cp_list, bins=50)
-        # plt.show()
+    fig, ax = plt.subplots()
+    ax.hist(x_cp_list, bins=50)
+    plt.show()
 
 if __name__ == "__main__":
     main()
