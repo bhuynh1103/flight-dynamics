@@ -9,8 +9,8 @@ location = data[:, 0] # m
 mass = data[:, 1] # kg
 
 # Define tolerances
-x_tolerance = 0.002 # Location uncertainty, +/- 2mm
-mass_tolerance = 0.1 # Mass uncertainity, +/- 0.1kg
+x_tolerance = 0.002 # Location uncertainty, m
+mass_tolerance = 0.1 # Mass uncertainity, kg
 
 def x_cp(x_data, location_tolerance):
     # Ref "The Theoretical Prediction of the Center of Pressure", James Barrowman
@@ -27,12 +27,6 @@ def x_cp(x_data, location_tolerance):
     fin_D = (0.8 + np.random.uniform(low=-location_tolerance, high=location_tolerance)) * np.sqrt(2) # Fin-to-fin diameter
     fin_span = (fin_D-body_D) / 2
     rocket_length = nose_L + body_L + nozzle_L
-
-    # N = np.size(x_data)
-    # x_data = [1.2, 6, 0.8] # Nosecone, body, nozzle
-    # x_with_tolerance = x_data + np.random.uniform(low=-location_tolerance, high=location_tolerance, size=N)
-    # rocket_length = np.sum(x_with_tolerance)
-    # rocket_length = x_with_tolerance[-1]
 
     # Nose
     CNalpha_nose = 2 # Coefficient of Normal Force W.R.T. AoA for an ogive nosecone
@@ -53,7 +47,6 @@ def x_cp(x_data, location_tolerance):
     fin_interference = 1 + body_R/(fin_span+body_R)
     CNalpha_fins = CNalpha_fins_noInterference * fin_interference
     delta_xf = x_r/3 * (fin_cr + 2*fin_ct) / (fin_cr + fin_ct) + 1/6 * ((fin_cr + fin_ct) - (fin_cr*fin_ct)/((fin_cr + fin_ct)))
-    # delta_xf = m*(a+2*b) / 3*(a+b) + 1/6 * (a+b - (a*b/(a+b)))
     xbar_fins = xf + delta_xf # CP location for fins
 
     # Full Rocket
@@ -62,17 +55,19 @@ def x_cp(x_data, location_tolerance):
 
     # More Parameters
     S_ref = np.pi * body_R**2 # Reference surface area
-    aero_moment = (xbar_fins**2 * CNalpha_fins + + xbar_body**2 * CNalpha_body + xbar_nose**2 * CNalpha_nose) / CNalpha # Aerodynamic pitching moment
+    aero_moment = (xbar_fins**2 * CNalpha_fins + xbar_body**2 * CNalpha_body + xbar_nose**2 * CNalpha_nose) / CNalpha # Aerodynamic moment about the CP
 
     return (xbar, CNalpha, S_ref, aero_moment)
 
 def main():
-    # print(x_cp(x_data=location, location_tolerance=x_tolerance))
     N = 1000
-    x_cp_list = np.array([])
+    x_cp_list = CNalpha_list = S_ref_list = aero_moment_list = np.array([])
     for i in range(N):
-        get_xcp = x_cp(x_data=location, location_tolerance=x_tolerance)
-        x_cp_list = np.append(x_cp_list, get_xcp[0])
+        [xbar, CNalpha, S_ref, aero_moment] = x_cp(x_data=location, location_tolerance=x_tolerance)
+        x_cp_list = np.append(x_cp_list, xbar)
+        CNalpha_list = np.append(CNalpha_list, CNalpha)
+        S_ref_list = np.append(S_ref_list, S_ref)
+        aero_moment_list = np.append(aero_moment_list, aero_moment)
 
     fig, ax = plt.subplots()
     ax.hist(x_cp_list, bins=50)
