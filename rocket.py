@@ -1,14 +1,15 @@
 import numpy as np
 
 class Rocket:
-    def __init__(self, masses, mass_locations, mass_tolerance, location_tolerance, thrust):
+    def __init__(self, masses, mass_locations, mass_tolerance, location_tolerance, dimensions, thrust):
         self.masses = masses
         self.x_masses = mass_locations
         self.mass_tolerance = mass_tolerance
         self.location_tolerance = location_tolerance
+        self.dimensions = dimensions
 
         # Find CP, CNalpha, S_ref, and aero_moment
-        barrowman_outputs = self.barrowman_eqns()
+        barrowman_outputs = self.barrowman_eqns(dimensions)
         self.x_cp = barrowman_outputs[0]
         self.CNalpha = barrowman_outputs[1]
         self.S_ref = barrowman_outputs[2]
@@ -17,20 +18,21 @@ class Rocket:
         # Find CG
         self.x_cg = self.get_x_cg()
 
-    def barrowman_eqns(self): # Outputs (Cp, CNalpha, S_ref, aero_moment)
+    def barrowman_eqns(self, x_data): # Outputs (Cp, CNalpha, S_ref, aero_moment)
         # Ref "The Theoretical Prediction of the Center of Pressure", James Barrowman
         # Assume small angles of attack (< 10 deg)
 
+        location_tolerance = self.location_tolerance
+        
         # Geometry w/ uncertainty
         # TODO: make the locations of the components a function of the object parameters
-        nose_L = 1.2 + np.random.uniform(low=-self.location_tolerance, high=self.location_tolerance)
-        body_L = 6 + np.random.uniform(low=-self.location_tolerance, high=self.location_tolerance)
-        body_D = 0.4 + np.random.uniform(low=-self.location_tolerance, high=self.location_tolerance)
-        nozzle_L = 0.8 + np.random.uniform(low=-self.location_tolerance, high=self.location_tolerance)
-        fin_cr = 0.8 + np.random.uniform(low=-self.location_tolerance, high=self.location_tolerance)
-        fin_ct = 0.7 + np.random.uniform(low=-self.location_tolerance, high=self.location_tolerance)
-        fin_station = 1.2 + np.random.uniform(low=-self.location_tolerance, high=self.location_tolerance) # Distance from the fins to end of body
-        fin_D = (0.8 + np.random.uniform(low=-self.location_tolerance, high=self.location_tolerance)) * np.sqrt(2) # Fin-to-fin diameter
+        nose_L = x_data[0] + np.random.uniform(low=-location_tolerance, high=location_tolerance)
+        body_L = x_data[1] + np.random.uniform(low=-location_tolerance, high=location_tolerance)
+        body_D = x_data[2] + np.random.uniform(low=-location_tolerance, high=location_tolerance)
+        nozzle_L = x_data[3] + np.random.uniform(low=-location_tolerance, high=location_tolerance)
+        fin_cr = x_data[4] + np.random.uniform(low=-location_tolerance, high=location_tolerance)
+        fin_ct = x_data[5] + np.random.uniform(low=-location_tolerance, high=location_tolerance)
+        fin_D = (x_data[6] + np.random.uniform(low=-location_tolerance, high=location_tolerance)) * np.sqrt(2) # Fin-to-fin diameter
         fin_span = (fin_D-body_D) / 2
         rocket_length = nose_L + body_L + nozzle_L
 
@@ -83,6 +85,10 @@ def main():
     x_data    = data[:, 0] # [m]
     mass_data = data[:, 1] # [kg]
 
+    path = "rocket_data.csv"
+    dimensions = np.loadtxt(path, delimiter=",")
+
+
     # Tolerances are +/- unless otherwise defined
     x_tolerance    = 2/1000 # [m]
     mass_tolerance = 0.1    # [kg]
@@ -91,7 +97,7 @@ def main():
 
     for i in range(3):
         halcyon = Rocket(masses=mass_data, mass_locations=x_data, 
-                         mass_tolerance=mass_tolerance, location_tolerance=x_tolerance, thrust=TXE2_thrust)
+                         mass_tolerance=mass_tolerance, location_tolerance=x_tolerance, dimensions=dimensions, thrust=TXE2_thrust)
         print(f"Halcyon x_cg = {halcyon.x_cg}")
         print(f"Halcyon x_cp = {halcyon.x_cp}")
         print()
