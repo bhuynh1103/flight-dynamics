@@ -2,32 +2,24 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 file = "rocket_data.csv"
-
-data = np.loadtxt(file, delimiter=",")
-
-location = data[:, 0] # m
-mass = data[:, 1] # kg
+data = np.loadtxt(file, delimiter=",") # Geometric measurements of rocket features, m
 
 # Define tolerances
 x_tolerance = 0.002 # Location uncertainty, m
-mass_tolerance = 0.1 # Mass uncertainity, kg
 
 def x_cp(x_data, location_tolerance):
-    # Ref "The Theoretical Prediction of the Center of Pressure", James Barrowman
-    # Assume small angles of attack (< 10 deg)
-
+ 
     # Geometry w/ uncertainty
-    nose_L = 1.2 + np.random.uniform(low=-location_tolerance, high=location_tolerance)
-    body_L = 6 + np.random.uniform(low=-location_tolerance, high=location_tolerance)
-    body_D = 0.4 + np.random.uniform(low=-location_tolerance, high=location_tolerance)
-    nozzle_L = 0.8 + np.random.uniform(low=-location_tolerance, high=location_tolerance)
-    fin_cr = 0.8 + np.random.uniform(low=-location_tolerance, high=location_tolerance)
-    fin_ct = 0.7 + np.random.uniform(low=-location_tolerance, high=location_tolerance)
-    fin_station = 1.2 + np.random.uniform(low=-location_tolerance, high=location_tolerance) # Distance from the fins to end of body
-    fin_D = (0.8 + np.random.uniform(low=-location_tolerance, high=location_tolerance)) * np.sqrt(2) # Fin-to-fin diameter
+    nose_L = x_data[0] + np.random.uniform(low=-location_tolerance, high=location_tolerance)
+    body_L = x_data[1] + np.random.uniform(low=-location_tolerance, high=location_tolerance)
+    body_D = x_data[2] + np.random.uniform(low=-location_tolerance, high=location_tolerance)
+    nozzle_L = x_data[3] + np.random.uniform(low=-location_tolerance, high=location_tolerance)
+    fin_cr = x_data[4] + np.random.uniform(low=-location_tolerance, high=location_tolerance)
+    fin_ct = x_data[5] + np.random.uniform(low=-location_tolerance, high=location_tolerance)
+    fin_D = (x_data[6] + np.random.uniform(low=-location_tolerance, high=location_tolerance)) * np.sqrt(2) # Fin-to-fin diameter
     fin_span = (fin_D-body_D) / 2
     rocket_length = nose_L + body_L + nozzle_L
-
+    
     # Nose
     CNalpha_nose = 2 # Coefficient of Normal Force W.R.T. AoA for an ogive nosecone
     xbar_nose = rocket_length - 0.466*nose_L # CP location for an ogive nosecone, as measured from the engine
@@ -59,11 +51,12 @@ def x_cp(x_data, location_tolerance):
 
     return (xbar, CNalpha, S_ref, aero_moment)
 
+
 def main():
     N = 1000
     x_cp_list = CNalpha_list = S_ref_list = aero_moment_list = np.array([])
     for i in range(N):
-        [xbar, CNalpha, S_ref, aero_moment] = x_cp(x_data=location, location_tolerance=x_tolerance)
+        [xbar, CNalpha, S_ref, aero_moment] = x_cp(x_data=data, location_tolerance=x_tolerance)
         x_cp_list = np.append(x_cp_list, xbar)
         CNalpha_list = np.append(CNalpha_list, CNalpha)
         S_ref_list = np.append(S_ref_list, S_ref)
