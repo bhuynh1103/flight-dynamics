@@ -134,11 +134,11 @@ class Rocket:
 
         L = np.array([L_u, L_v, L_w]) # [ft]
         sigma = np.array([sigma_u, sigma_v, sigma_w]) # [m/s]
-        noise = np.normal(0, 1, size=[3, 1])
+        noise = np.random.normal(0, 1, size=[3, 1])
 
         gust_next = (1 - V_fps * dt / L) * gust + sigma * np.sqrt(2 * V_fps * dt / L) * noise # [m/s]
 
-        gust_rotated = np.array([gust_next[2], gust_next[1], gust_next[0]]);
+        gust_rotated = np.array([gust_next[2], gust_next[1], gust_next[0]])
         return gust_rotated
     
     def get_x_cg(self): # get location of center of gravity
@@ -169,7 +169,7 @@ class Rocket:
         gust_v = state[7]
         gust_w = state[8]
 
-        gust_state = state[6:8]
+        gust_state = np.array([gust_u, gust_v, gust_w])
 
         T = self.thrust
         M = self.total_mass
@@ -189,8 +189,8 @@ class Rocket:
 
         V = np.sqrt(u**2 + w**2) # Freestream velocity
 
-        psi = np.atan2(vz, vx) # flight path angle
-        alpha = np.atan2(w, u) # angle of attack
+        psi = np.arctan2(vz, vx) # flight path angle
+        alpha = np.arctan2(w, u) # angle of attack
 
         q_bar = 0.5 * rho * V**2 # dynamic pressure
         L = q_bar * S * CNalpha * alpha # lift
@@ -200,11 +200,11 @@ class Rocket:
         x_dot     = vx
         z_dot     = vz
         vx_dot    = ( T*np.cos(theta) - D*np.cos(psi) - L*np.sin(psi) ) / M
-        vz_dot    = ( T*np.sin(theta) - D*np.sin(psi) + L*np.cod(psi) ) / M
+        vz_dot    = ( T*np.sin(theta) - D*np.sin(psi) + L*np.cos(psi) ) / M
         theta_dot = q
         q_dot     = ( -L*np.cos(alpha)*sm -D*np.sin(alpha)*sm ) / I
 
-        gust_state_next = self.dryden_turbulence(V, z, gust_state, gust_intensity)
+        gust_state_next = self.dryden_turbulence(dt, V, z, gust_state, gust_intensity)
 
         state_dot = np.array([
             x_dot,
@@ -215,10 +215,26 @@ class Rocket:
             q_dot,
             gust_state_next[0],
             gust_state_next[1],
-            gust_state_next[2],
+            gust_state_next[2]
         ])
 
         return state_dot
+    
+    def integration_sim(self, dt, num_iterations):
+        # from state: vx, vz, q
+        # constants: mass, thrust
+        # calculate: lift, drag, static margin
+        # misc.: aero_moment
+
+        for i in range(num_iterations):
+            if i == 0:
+                state = np.zeros(9)
+                state[4] = np.deg2rad(90)
+                state[3] = 0.001
+
+            dx = self.state_dot(state=state, dt=0.01, gust_intensity=4.5) * dt
+            state = dx*dt + state
+            return state
 
 def main():
     path = "mass_placement.csv"
@@ -236,7 +252,7 @@ def main():
     mass_tolerance = 0.1    # [kg]
 
     TXE2_thrust = 15.5 * 1000 # [N]
-
+    dt = 0.01
     for i in range(3):
         halcyon = Rocket(masses=mass_data, mass_locations=x_data, 
                          mass_tolerance=mass_tolerance, mass_location_tolerance=x_tolerance, 
@@ -245,6 +261,13 @@ def main():
         print(f"Halcyon x_cp = {halcyon.x_cp}")
         print(f"Halcyon inertia = {halcyon.inertia}")
         print()
+
+        print(halcyon.integration_sim(dt=0.01, num_iterations=100))
+        # if i == 1:
+        #     state = np.zeros(1, 9)
+        # dx = halcyon.state_dot(state=state, dt=0.01, gust_intensity=4.5)
+        # state = state + dx*dt
+        
 
 if __name__ == "__main__":
     main()
