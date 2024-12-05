@@ -233,9 +233,11 @@ class Rocket:
                 state[3] = 0.001
                 state[1] = 0.01
 
-            dx = self.state_dot(state=state, dt=0.01, gust_intensity=4.5) * dt
+            dx = self.state_dot(state=state, dt=0.01, gust_intensity=4.5)
             state = dx*dt + state
-            return state
+
+            print(state)
+            print()
 
 def main():
     path = "mass_placement.csv"
@@ -254,16 +256,20 @@ def main():
 
     TXE2_thrust = 15.5 * 1000 # [N]
     dt = 0.01
-    for i in range(3):
+    for i in range(1):
         halcyon = Rocket(masses=mass_data, mass_locations=x_data, 
                          mass_tolerance=mass_tolerance, mass_location_tolerance=x_tolerance, 
                          aerodynamic_dimensions=dimensions, thrust=TXE2_thrust)
-        print(f"Halcyon x_cg = {halcyon.x_cg}")
-        print(f"Halcyon x_cp = {halcyon.x_cp}")
-        print(f"Halcyon inertia = {halcyon.inertia}")
-        print()
+        # print(f"Halcyon x_cg = {halcyon.x_cg}")
+        # print(f"Halcyon x_cp = {halcyon.x_cp}")
+        # print(f"Halcyon inertia = {halcyon.inertia}")
 
-        print(halcyon.integration_sim(dt=0.01, num_iterations=100))
+        halcyon.integration_sim(dt=0.01, num_iterations=1000)
+
+        # print(halcyon.integration_sim(dt=0.01, num_iterations=50))
+
+        # print()
+
         # if i == 1:
         #     state = np.zeros(1, 9)
         # dx = halcyon.state_dot(state=state, dt=0.01, gust_intensity=4.5)
