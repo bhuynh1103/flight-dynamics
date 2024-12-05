@@ -134,11 +134,11 @@ class Rocket:
 
         L = np.array([L_u, L_v, L_w]) # [ft]
         sigma = np.array([sigma_u, sigma_v, sigma_w]) # [m/s]
-        noise = np.random.normal(0, 1, size=[3, 1])
+        noise = np.random.normal(0, 1, size=[1, 3])
 
         gust_next = (1 - V_fps * dt / L) * gust + sigma * np.sqrt(2 * V_fps * dt / L) * noise # [m/s]
 
-        gust_rotated = np.array([gust_next[2], gust_next[1], gust_next[0]])
+        gust_rotated = np.array([gust_next[0][2], gust_next[0][1], gust_next[0][0]])
         return gust_rotated
     
     def get_x_cg(self): # get location of center of gravity
@@ -231,6 +231,7 @@ class Rocket:
                 state = np.zeros(9)
                 state[4] = np.deg2rad(90)
                 state[3] = 0.001
+                state[1] = 0.01
 
             dx = self.state_dot(state=state, dt=0.01, gust_intensity=4.5) * dt
             state = dx*dt + state
