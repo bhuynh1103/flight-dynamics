@@ -1,22 +1,35 @@
 import numpy as np
 
 class Rocket:
-    def __init__(self, masses, mass_locations, mass_tolerance, location_tolerance, dimensions, thrust):
-        self.masses = masses
-        self.x_masses = mass_locations
+    def __init__(self, masses, mass_locations, mass_tolerance, mass_location_tolerance, aerodynamic_dimensions, thrust):
+        self.n = np.size(masses) # Number of point masses provided
+        self.thrust = thrust
+
+        # Randomly define masses and locations of masses
+        self.masses   = masses + np.random.uniform(low=-mass_tolerance, high=mass_tolerance, size=self.n) # [kg]
+        self.x_masses = mass_locations + np.random.uniform(low=-mass_location_tolerance, high=mass_location_tolerance, size=self.n) # [m]
         self.mass_tolerance = mass_tolerance
-        self.location_tolerance = location_tolerance
-        self.dimensions = dimensions
+        self.location_tolerance = mass_location_tolerance
+        self.total_mass = np.sum(self.masses) # [kg]
 
-        # Find CP, CNalpha, S_ref, and aero_moment
-        barrowman_outputs = self.barrowman_eqns(dimensions)
-        self.x_cp = barrowman_outputs[0]
-        self.CNalpha = barrowman_outputs[1]
-        self.S_ref = barrowman_outputs[2]
-        self.aero_moment = barrowman_outputs[3]
+        # Aerodynamic Properties of Rocket
+        self.dimensions = aerodynamic_dimensions
+        self.drag_coefficient = 0.5
 
-        # Find CG
-        self.x_cg = self.get_x_cg()
+        # Get CP, CNalpha, S_ref, and aero_moment
+        barrowman_outputs = self.barrowman_eqns(self.dimensions)
+        self.x_cp         = barrowman_outputs[0] # [m]
+        self.CNalpha      = barrowman_outputs[1]
+        self.S_ref        = barrowman_outputs[2] # [m^2]
+        self.aero_moment  = barrowman_outputs[3] # [N*m]
+
+        # Get CG
+        self.x_cg = self.get_x_cg() # [m]
+
+        self.static_margin = self.x_cg - self.x_cp
+
+        # Get moment of inertia about CG
+        self.inertia = self.get_inertia() # [kg*m^2]
 
     def barrowman_eqns(self, x_data): # Outputs (Cp, CNalpha, S_ref, aero_moment)
         # Ref "The Theoretical Prediction of the Center of Pressure", James Barrowman
@@ -67,16 +80,145 @@ class Rocket:
 
         return (xbar, CNalpha, S_ref, aero_moment)
 
-    def get_x_cg(self):
-        N = np.size(self.masses)
-        m_tolerance = self.mass_tolerance
-        x_tolerance = self.location_tolerance
+    def dryden_turbulence(self, dt, V, h, gust, gust_intensity):
+        # t, dt given in [s]
+        # h given in [m]
+        # gust is vector given in [m/s]
+        # gust is given in [m/s]
 
-        m = self.masses + np.random.uniform(low=-m_tolerance, high=m_tolerance, size=N)
-        x = self.x_masses + np.random.uniform(low=-x_tolerance, high=x_tolerance, size=N)
+        V_fps = V * 3.28084 # [ft/s]
+        h_ft = h * 3.28084 # [ft]
+
+        if h_ft <= 1000:
+            L_u = h / (0.177 + 0.000823*h)**1.2 # [ft]
+            L_v = L_u # [ft]
+            L_w = h_ft # [ft]
+
+            sigma_w = gust_intensity # [m/s]
+            sigma_u = sigma_w / (0.177 + 0.000823*h_ft)**0.4 # [m/s]
+            sigma_v = sigma_u # [m/s]
+        elif h_ft >= 2000:
+            L_u = 1750 # [ft]
+            L_v = 1750 # [ft]
+            L_w = 1750 # [ft]
+
+            sigma_u = gust_intensity
+            sigma_v = gust_intensity
+            sigma_w = gust_intensity
+        else:
+            # Linearly Interprolate Turbulence Scale Length
+            L_u_1000 = 1000 / (0.177 + 0.000823*1000)**1.2
+            L_v_1000 = L_u_1000
+            L_w_1000 = 1000
+
+            L_u_2000 = 1750
+            L_v_2000 = 1750
+            L_w_2000 = 1750
+
+            L_u = np.interp(h_ft, [1000, 2000], [L_u_1000, L_u_2000]) # [ft]
+            L_v = np.interp(h_ft, [1000, 2000], [L_v_1000, L_v_2000]) # [ft]
+            L_w = np.interp(h_ft, [1000, 2000], [L_w_1000, L_w_2000]) # [ft]
+
+            # Linearly Interprolate Turbulence Intensity
+            sigma_w_1000 = gust_intensity # [m/s]
+            sigma_u_1000 = sigma_w_1000 / (0.177 + 0.000823*1000)**0.4 # [m/s]
+            sigma_v_1000 = sigma_u_1000
+
+            sigma_u_2000 = gust_intensity # [m/s]
+            sigma_v_2000 = gust_intensity # [m/s]
+            sigma_w_2000 = gust_intensity # [m/s]
+
+            sigma_u = np.interp(h_ft, [1000, 2000], [sigma_u_1000, sigma_u_2000]) # [m/s]
+            sigma_v = np.interp(h_ft, [1000, 2000], [sigma_v_1000, sigma_v_2000]) # [m/s]
+            sigma_w = np.interp(h_ft, [1000, 2000], [sigma_w_1000, sigma_w_2000]) # [m/s]
+
+        L = np.array([L_u, L_v, L_w]) # [ft]
+        sigma = np.array([sigma_u, sigma_v, sigma_w]) # [m/s]
+        noise = np.normal(0, 1, size=[3, 1])
+
+        gust_next = (1 - V_fps * dt / L) * gust + sigma * np.sqrt(2 * V_fps * dt / L) * noise # [m/s]
+
+        gust_rotated = np.array([gust_next[2], gust_next[1], gust_next[0]]);
+        return gust_rotated
+    
+    def get_x_cg(self): # get location of center of gravity
+        m = self.masses
+        x = self.x_masses
+
         x_cg = m @ x / np.sum(m)
-
         return x_cg
+    
+    def get_inertia(self): # get moment of inertia about center of gravity
+        m = self.masses
+        x = self.x_masses
+        x_cg = self.x_cg
+        r = x - x_cg
+
+        I = np.sum(m * r**2)
+        return I
+
+    def state_dot(self, state, dt, gust_intensity):
+        # Define states
+        x      = state[0]
+        z      = state[1]
+        vx     = state[2]
+        vz     = state[3]
+        theta  = state[4]
+        q      = state[5]
+        gust_u = state[6]
+        gust_v = state[7]
+        gust_w = state[8]
+
+        gust_state = state[6:8]
+
+        T = self.thrust
+        M = self.total_mass
+        I = self.inertia
+        S = self.S_ref
+        CNalpha = self.CNalpha
+        Cd = self.drag_coefficient
+        sm = self.static_margin
+
+        rho_sl = 1.225 # [kg/m^3] - Air Density at Sea Level
+        beta = 1 / 9042 # scale length
+        rho = rho_sl * np.exp(-beta*z) # [kg/m^3]
+
+
+        u = vx * np.cos(theta) + vz * np.sin(theta) - gust_u # velocity in x-body axis
+        w = vx * np.sin(theta) - vz * np.cos(theta) - gust_w # velocity in z-body axis
+
+        V = np.sqrt(u**2 + w**2) # Freestream velocity
+
+        psi = np.atan2(vz, vx) # flight path angle
+        alpha = np.atan2(w, u) # angle of attack
+
+        q_bar = 0.5 * rho * V**2 # dynamic pressure
+        L = q_bar * S * CNalpha * alpha # lift
+        D = q_bar * S * Cd
+
+        # Derivatives
+        x_dot     = vx
+        z_dot     = vz
+        vx_dot    = ( T*np.cos(theta) - D*np.cos(psi) - L*np.sin(psi) ) / M
+        vz_dot    = ( T*np.sin(theta) - D*np.sin(psi) + L*np.cod(psi) ) / M
+        theta_dot = q
+        q_dot     = ( -L*np.cos(alpha)*sm -D*np.sin(alpha)*sm ) / I
+
+        gust_state_next = self.dryden_turbulence(V, z, gust_state, gust_intensity)
+
+        state_dot = np.array([
+            x_dot,
+            z_dot,
+            vx_dot,
+            vz_dot,
+            theta_dot,
+            q_dot,
+            gust_state_next[0],
+            gust_state_next[1],
+            gust_state_next[2],
+        ])
+
+        return state_dot
 
 def main():
     path = "mass_placement.csv"
@@ -97,9 +239,11 @@ def main():
 
     for i in range(3):
         halcyon = Rocket(masses=mass_data, mass_locations=x_data, 
-                         mass_tolerance=mass_tolerance, location_tolerance=x_tolerance, dimensions=dimensions, thrust=TXE2_thrust)
+                         mass_tolerance=mass_tolerance, mass_location_tolerance=x_tolerance, 
+                         aerodynamic_dimensions=dimensions, thrust=TXE2_thrust)
         print(f"Halcyon x_cg = {halcyon.x_cg}")
         print(f"Halcyon x_cp = {halcyon.x_cp}")
+        print(f"Halcyon inertia = {halcyon.inertia}")
         print()
 
 if __name__ == "__main__":
