@@ -90,39 +90,39 @@ class Rocket:
         h_ft = h * 3.28084 # [ft]
 
         if h_ft <= 1000:
-            L_u = h / (0.177 + 0.000823*h)**1.2 # [ft]
-            L_v = L_u # [ft]
-            L_w = h_ft # [ft]
+            L_u = (h_ft / (0.177 + 0.000823*h_ft)**1.2) / 3.28084 # [m]
+            L_v = L_u # [m]
+            L_w = h # [m]
 
             sigma_w = gust_intensity # [m/s]
             sigma_u = sigma_w / (0.177 + 0.000823*h_ft)**0.4 # [m/s]
             sigma_v = sigma_u # [m/s]
         elif h_ft >= 2000:
-            L_u = 1750 # [ft]
-            L_v = 1750 # [ft]
-            L_w = 1750 # [ft]
+            L_u = 1750 / 3.28084 # [m]
+            L_v = 1750 / 3.28084 # [m]
+            L_w = 1750 / 3.28084 # [m]
 
-            sigma_u = gust_intensity
-            sigma_v = gust_intensity
-            sigma_w = gust_intensity
+            sigma_u = gust_intensity # [m/s]
+            sigma_v = gust_intensity # [m/s]
+            sigma_w = gust_intensity # [m/s]
         else:
             # Linearly Interprolate Turbulence Scale Length
-            L_u_1000 = 1000 / (0.177 + 0.000823*1000)**1.2
-            L_v_1000 = L_u_1000
-            L_w_1000 = 1000
+            L_u_1000 = (1000 / (0.177 + 0.000823*1000)**1.2) # [ft]
+            L_v_1000 = L_u_1000 # [ft]
+            L_w_1000 = 1000 # [ft]
 
-            L_u_2000 = 1750
-            L_v_2000 = 1750
-            L_w_2000 = 1750
+            L_u_2000 = 1750 # [ft]
+            L_v_2000 = 1750 # [ft]
+            L_w_2000 = 1750 # [ft]
 
-            L_u = np.interp(h_ft, [1000, 2000], [L_u_1000, L_u_2000]) # [ft]
-            L_v = np.interp(h_ft, [1000, 2000], [L_v_1000, L_v_2000]) # [ft]
-            L_w = np.interp(h_ft, [1000, 2000], [L_w_1000, L_w_2000]) # [ft]
+            L_u = np.interp(h_ft, [1000, 2000], [L_u_1000, L_u_2000]) / 3.28084 # [m]
+            L_v = np.interp(h_ft, [1000, 2000], [L_v_1000, L_v_2000]) / 3.28084 # [m]
+            L_w = np.interp(h_ft, [1000, 2000], [L_w_1000, L_w_2000]) / 3.28084 # [m]
 
             # Linearly Interprolate Turbulence Intensity
             sigma_w_1000 = gust_intensity # [m/s]
             sigma_u_1000 = sigma_w_1000 / (0.177 + 0.000823*1000)**0.4 # [m/s]
-            sigma_v_1000 = sigma_u_1000
+            sigma_v_1000 = sigma_u_1000 # [m/s]
 
             sigma_u_2000 = gust_intensity # [m/s]
             sigma_v_2000 = gust_intensity # [m/s]
@@ -136,7 +136,7 @@ class Rocket:
         sigma = np.array([sigma_u, sigma_v, sigma_w]) # [m/s]
         noise = np.random.normal(0, 1, size=[1, 3])
 
-        gust_next = (1 - V_fps * dt / L) * gust + sigma * np.sqrt(2 * V_fps * dt / L) * noise # [m/s]
+        gust_next = np.exp(-V_fps * dt / L) * gust + sigma * np.sqrt(1 - np.exp(-2 * V_fps * dt / L)) * noise # [m/s]
 
         gust_rotated = np.array([gust_next[0][2], gust_next[0][1], gust_next[0][0]])
         return gust_rotated
@@ -184,8 +184,8 @@ class Rocket:
         rho = rho_sl * np.exp(-beta*z) # [kg/m^3]
 
 
-        u = vx * np.cos(theta) + vz * np.sin(theta) - gust_u # velocity in x-body axis
-        w = vx * np.sin(theta) - vz * np.cos(theta) - gust_w # velocity in z-body axis
+        u = vx * np.cos(theta) + vz * np.sin(theta) # - gust_u # velocity in x-body axis
+        w = vx * np.sin(theta) - vz * np.cos(theta) # - gust_w # velocity in z-body axis
 
         V = np.sqrt(u**2 + w**2) # Freestream velocity
 
@@ -236,7 +236,15 @@ class Rocket:
             dx = self.state_dot(state=state, dt=0.01, gust_intensity=4.5)
             state = dx*dt + state
 
-            print(state)
+            print(f"x = {state[0]}")
+            print(f"z = {state[1]}")
+            print(f"vx = {state[2]}")
+            print(f"vz = {state[3]}")
+            print(f"theta = {state[4]}")
+            print(f"q = {state[5]}")
+            print(f"gust_u = {state[6]}")
+            print(f"gust_v = {state[7]}")
+            print(f"gust_w = {state[8]}")
             print()
 
 def main():
@@ -264,7 +272,7 @@ def main():
         # print(f"Halcyon x_cp = {halcyon.x_cp}")
         # print(f"Halcyon inertia = {halcyon.inertia}")
 
-        halcyon.integration_sim(dt=0.01, num_iterations=1000)
+        halcyon.integration_sim(dt=0.1, num_iterations=100)
 
         # print(halcyon.integration_sim(dt=0.01, num_iterations=50))
 
