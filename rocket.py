@@ -221,6 +221,9 @@ class Rocket:
             vz_dot,
             theta_dot,
             q_dot,
+
+            alpha,
+
             gust_state_next[0],
             gust_state_next[1],
             gust_state_next[2]
@@ -229,18 +232,20 @@ class Rocket:
         return state_dot
     
     def integration_sim(self, dt, num_iterations):
+        alpha_list = np.array([])
         for i in range(num_iterations):
             if i == 0:
                 state = np.zeros(9)
                 state[4] = np.deg2rad(90)
                 state[3] = 0.001
                 state[1] = 0.01
-                state_matrix = np.zeros((num_iterations, 6)) # Matrix with the states as columns and times as rows
+                state_matrix = np.zeros((num_iterations, 7)) # Matrix with the states as columns and times as rows
 
             dx = self.state_dot(state=state, dt=0.01, gust_intensity=4.5)
-            state[0:6] = dx[0:6]*dt + state[0:6]
-            state[6:9] = dx[6:9]
-            state_matrix[i, :] = state[0:6]
+            state[0:6] = dx[0:6]*dt + state[0:6] # Integrate the first 6 states
+            state[6] = dx[6] # Storage for alpha
+            state[7:9] = dx[7:9] # Last 3 states are gusts, not to be integrated
+            state_matrix[i, :] = state[0:7] 
         
         # start_time = 0
         # end_time = num_iterations * dt
@@ -273,7 +278,7 @@ class Rocket:
         # print(f"gust_w = {state[8]}")
         # print()
 
-        return state_matrix 
+        return state_matrix
 
         # plt.plot(time, state_matrix[:, 3])
         # plt.xlabel("Time [s]")
@@ -302,9 +307,20 @@ def main():
     time = np.arange(start_time, end_time, dt)
 
     N = 500
-    x_list = z_list = vx_list = vz_list = theta_list = q_list = np.array([])
+    x_list = z_list = vx_list = vz_list = theta_list = q_list = alpha_list = np.array([])
 
-    runs = np.empty(shape=(N, num_iterations, 6)) # states as columns, time as rows, every matrix layer is a run
+    runs = np.empty(shape=(N, num_iterations, 7)) # states as columns, time as rows, every matrix layer is a run
+
+    # halcyon = Rocket(masses=mass_data, mass_locations=x_data, 
+    #                      mass_tolerance=mass_tolerance, mass_location_tolerance=x_tolerance, 
+    #                      aerodynamic_dimensions=dimensions, thrust=TXE2_thrust)
+    # [halcyon_state, alpha_list] = halcyon.integration_sim(dt=dt, num_iterations=num_iterations)
+
+    # alpha_runs = np.empty(shape=(N, num_iterations, np.size(alpha_list)))
+
+
+    fig1, (ax1, ax2, ax3, ax4, ax5, ax6, ax7) = plt.subplots(7, 1)
+
 
     for i in range(N):
         halcyon = Rocket(masses=mass_data, mass_locations=x_data, 
@@ -316,16 +332,17 @@ def main():
 
         halcyon_state = halcyon.integration_sim(dt=dt, num_iterations=num_iterations)
 
-        # x_list = np.append(x_list, halcyon_state[-1][0])
-        # z_list = np.append(z_list, halcyon_state[-1][1])
-        # vx_list = np.append(vx_list, halcyon_state[-1][2])
-        # vz_list = np.append(vz_list, halcyon_state[-1][3])
-        # theta_list = np.append(theta_list, halcyon_state[-1][4])
-        # q_list = np.append(q_list, halcyon_state[-1][5])
+        x_list = np.append(x_list, halcyon_state[-1][0])
+        z_list = np.append(z_list, halcyon_state[-1][1])
+        vx_list = np.append(vx_list, halcyon_state[-1][2])
+        vz_list = np.append(vz_list, halcyon_state[-1][3])
+        theta_list = np.append(theta_list, halcyon_state[-1][4])
+        q_list = np.append(q_list, halcyon_state[-1][5])
+        alpha_list = np.append(alpha_list, halcyon_state[-1][6])
 
         runs[i] = halcyon_state
+        # print(i)
 
-        print(i)
     
     mean = np.mean(runs, axis=0)
     std = np.std(runs, axis=0)
@@ -333,43 +350,68 @@ def main():
     # print(np.shape(time))
     # print(np.shape(mean[:, 0]))
 
-    fig, (ax1, ax2, ax3, ax4, ax5, ax6) = plt.subplots(6, 1)
-    plt.subplot(611)
-    plt.plot(time, mean[:, 0] + 2 * std[:, 0], 'b')
-    plt.plot(time, mean[:, 0] - 2 * std[:, 0], 'b')
-    plt.plot(time, mean[:, 0], 'r')
+    ax1.plot(time, mean[:, 0] + 2 * std[:, 0], 'b')
+    ax1.plot(time, mean[:, 0] - 2 * std[:, 0], 'b')
+    ax1.plot(time, mean[:, 0], 'r')
 
-    plt.subplot(612)
-    plt.plot(time, mean[:, 1] + 2 * std[:, 1], 'b')
-    plt.plot(time, mean[:, 1] - 2 * std[:, 1], 'b')
-    plt.plot(time, mean[:, 1], 'r')
+    ax2.plot(time, mean[:, 1] + 2 * std[:, 1], 'b')
+    ax2.plot(time, mean[:, 1] - 2 * std[:, 1], 'b')
+    ax2.plot(time, mean[:, 1], 'r')
 
-    plt.subplot(613)
-    plt.plot(time, mean[:, 2] + 2 * std[:, 2], 'b')
-    plt.plot(time, mean[:, 2] - 2 * std[:, 2], 'b')
-    plt.plot(time, mean[:, 2], 'r')
+    ax3.plot(time, mean[:, 2] + 2 * std[:, 2], 'b')
+    ax3.plot(time, mean[:, 2] - 2 * std[:, 2], 'b')
+    ax3.plot(time, mean[:, 2], 'r')
 
-    plt.subplot(614)
-    plt.plot(time, mean[:, 3] + 2 * std[:, 3], 'b')
-    plt.plot(time, mean[:, 3] - 2 * std[:, 3], 'b')
-    plt.plot(time, mean[:, 3], 'r')
+    ax4.plot(time, mean[:, 3] + 2 * std[:, 3], 'b')
+    ax4.plot(time, mean[:, 3] - 2 * std[:, 3], 'b')
+    ax4.plot(time, mean[:, 3], 'r')
 
-    plt.subplot(615)
-    plt.plot(time, mean[:, 4] + 2 * std[:, 4], 'b')
-    plt.plot(time, mean[:, 4] - 2 * std[:, 4], 'b')
-    plt.plot(time, mean[:, 4], 'r')
+    ax5.plot(time, mean[:, 4] + 2 * std[:, 4], 'b')
+    ax5.plot(time, mean[:, 4] - 2 * std[:, 4], 'b')
+    ax5.plot(time, mean[:, 4], 'r')
 
-    plt.subplot(616)
-    plt.plot(time, mean[:, 5] + 2 * std[:, 5], 'b')
-    plt.plot(time, mean[:, 5] - 2 * std[:, 5], 'b')
-    plt.plot(time, mean[:, 5], 'r')
+    ax6.plot(time, mean[:, 5] + 2 * std[:, 5], 'b')
+    ax6.plot(time, mean[:, 5] - 2 * std[:, 5], 'b')
+    ax6.plot(time, mean[:, 5], 'r')
 
-    # ax1.hist(x_list, bins=50)
-    # ax2.hist(z_list, bins=50)
-    # ax3.hist(vx_list, bins=50)
-    # ax4.hist(vz_list, bins=50)
-    # ax5.hist(theta_list, bins=50)
-    # ax6.hist(q_list, bins=50)
+    ax7.plot(time, mean[:, 6] + 2 * std[:, 6], 'b')
+    ax7.plot(time, mean[:, 6] - 2 * std[:, 6], 'b')
+    ax7.plot(time, mean[:, 6], 'r')
+
+    ax1.set_xlabel('Time (s)')
+    ax1.set_ylabel('$x$ (m)')
+
+    ax2.set_xlabel('Time (s)')
+    ax2.set_ylabel('$z$ (m)')
+
+    ax3.set_xlabel('Time (s)')
+    ax3.set_ylabel('$v_x$ (m/s)')
+
+    ax4.set_xlabel('Time (s)')
+    ax4.set_ylabel('$v_z$ (m/s)')
+
+    ax5.set_xlabel('Time (s)')
+    ax5.set_ylabel('$\\theta$ (rad)')
+
+    ax6.set_xlabel('Time (s)')
+    ax6.set_ylabel('q (rad/s)')
+
+    ax7.set_xlabel('Time (s)')
+    ax7.set_ylabel('$\\alpha$ (rad)')
+
+    fig1.suptitle('Rocket States vs. Time for %d Halcyon Objects' % N)
+
+    fig2, (ax11, ax22, ax33, ax44, ax55, ax66, ax77) = plt.subplots(7, 1)
+
+    ax11.hist(x_list, bins=50)
+    ax22.hist(z_list, bins=50)
+    ax33.hist(vx_list, bins=50)
+    ax44.hist(vz_list, bins=50)
+    ax55.hist(theta_list, bins=50)
+    ax66.hist(q_list, bins=50)
+    ax77.hist(alpha_list, bins=50)
+
+    fig2.suptitle('Distribution of Final Rocket States')
     plt.show()
 
 
