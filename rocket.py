@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 class Rocket:
     def __init__(self, masses, mass_locations, mass_tolerance, mass_location_tolerance, aerodynamic_dimensions, thrust):
@@ -232,18 +233,30 @@ class Rocket:
             dx = self.state_dot(state=state, dt=0.01, gust_intensity=4.5)
             state[0:6] = dx[0:6]*dt + state[0:6]
             state[6:9] = dx[6:9]
-            # state_matrix[num_iterations-1, :] = state[0:5]
+            state_matrix[i, :] = state[0:6]
 
-            print(f"x = {state[0]}")
-            print(f"z = {state[1]}")
-            print(f"vx = {state[2]}")
-            print(f"vz = {state[3]}")
-            print(f"theta = {state[4]}")
-            print(f"q = {state[5]}")
-            print(f"gust_u = {state[6]}")
-            print(f"gust_v = {state[7]}")
-            print(f"gust_w = {state[8]}")
-            print()
+        start_time = 0
+        end_time = num_iterations * dt
+        time = np.arange(start_time, end_time, dt)
+
+        print(state_matrix[:, 1])
+
+        plt.plot(time, state_matrix[:, 4])
+        plt.xlabel("Time [s]")
+        plt.ylabel("theta [rad]")
+        plt.grid()
+        plt.show()
+
+        # print(f"x = {state[0]}")
+        # print(f"z = {state[1]}")
+        # print(f"vx = {state[2]}")
+        # print(f"vz = {state[3]}")
+        # print(f"theta = {state[4]}")
+        # print(f"q = {state[5]}")
+        # print(f"gust_u = {state[6]}")
+        # print(f"gust_v = {state[7]}")
+        # print(f"gust_w = {state[8]}")
+        # print()
 
 def main():
     path = "mass_placement.csv"
@@ -270,7 +283,7 @@ def main():
         # print(f"Halcyon x_cp = {halcyon.x_cp}")
         # print(f"Halcyon inertia = {halcyon.inertia}")
 
-        halcyon.integration_sim(dt=0.01, num_iterations=6000)
+        halcyon.integration_sim(dt=dt, num_iterations=6000)
 
         # print(halcyon.integration_sim(dt=0.01, num_iterations=50))
 
