@@ -301,7 +301,7 @@ def main():
     end_time = num_iterations * dt
     time = np.arange(start_time, end_time, dt)
 
-    N = 10
+    N = 500
     x_list = z_list = vx_list = vz_list = theta_list = q_list = np.array([])
 
     for i in range(N):
@@ -314,21 +314,25 @@ def main():
 
         halcyon_state = halcyon.integration_sim(dt=dt, num_iterations=num_iterations)
 
-        x_list = halcyon_state[0, :]
-        z_list = halcyon_state[1, :]
-        vx_list = np.append(vx_list, halcyon_state[2])
-        vz_list = np.append(vz_list, halcyon_state[3])
-        theta_list = np.append(theta_list, halcyon_state[4])
-        q_list = np.append(q_list, halcyon_state[5])
+        # print(halcyon_state[-1])
+
+        x_list = np.append(x_list, halcyon_state[-1][0])
+        z_list = np.append(z_list, halcyon_state[-1][1])
+        vx_list = np.append(vx_list, halcyon_state[-1][2])
+        vz_list = np.append(vz_list, halcyon_state[-1][3])
+        theta_list = np.append(theta_list, halcyon_state[-1][4])
+        q_list = np.append(q_list, halcyon_state[-1][5])
+
+        print(i)
     
 
     fig, (ax1, ax2, ax3, ax4, ax5, ax6) = plt.subplots(6, 1)
-    # ax1.hist(x_list, bins=50)
+    ax1.hist(x_list, bins=50)
     ax2.hist(z_list, bins=50)
-    # ax3.hist(vx_list, bins=50)
-    # ax4.hist(vz_list, bins=50)
-    # ax5.hist(theta_list, bins=50)
-    # ax6.hist(q_list, bins=50)
+    ax3.hist(vx_list, bins=50)
+    ax4.hist(vz_list, bins=50)
+    ax5.hist(theta_list, bins=50)
+    ax6.hist(q_list, bins=50)
     plt.show()
 
 
