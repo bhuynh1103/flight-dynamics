@@ -221,20 +221,17 @@ class Rocket:
         return state_dot
     
     def integration_sim(self, dt, num_iterations):
-        # from state: vx, vz, q
-        # constants: mass, thrust
-        # calculate: lift, drag, static margin
-        # misc.: aero_moment
-
         for i in range(num_iterations):
             if i == 0:
                 state = np.zeros(9)
                 state[4] = np.deg2rad(90)
                 state[3] = 0.001
                 state[1] = 0.01
+                state_matrix = np.zeros((num_iterations, 6))
 
             dx = self.state_dot(state=state, dt=0.01, gust_intensity=4.5)
-            state = dx*dt + state
+            state[0:5] = dx[0:5]*dt + state[0:5]
+            # state_matrix[num_iterations-1, :] = state[0:5]
 
             print(f"x = {state[0]}")
             print(f"z = {state[1]}")
