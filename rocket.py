@@ -240,29 +240,28 @@ class Rocket:
             state[0:6] = dx[0:6]*dt + state[0:6]
             state[6:9] = dx[6:9]
             state_matrix[i, :] = state[0:6]
+        
+        # start_time = 0
+        # end_time = num_iterations * dt
+        # time = np.arange(start_time, end_time, dt)
 
-        start_time = 0
-        end_time = num_iterations * dt
-        time = np.arange(start_time, end_time, dt)
+        # fig, (ax1, ax2, ax3, ax4, ax5, ax6) = plt.subplots(6, 1)
 
-        fig, (ax1, ax2, ax3, ax4, ax5, ax6) = plt.subplots(6, 1)
+        # ax1.plot(time, state_matrix[:, 0])
 
-        ax1.plot(time, state_matrix[:, 0])
+        # ax2.plot(time, state_matrix[:, 1])
 
-        ax2.plot(time, state_matrix[:, 1])
+        # ax3.plot(time, state_matrix[:, 2])
 
-        ax3.plot(time, state_matrix[:, 2])
+        # ax4.plot(time, state_matrix[:, 3])
 
-        ax4.plot(time, state_matrix[:, 3])
+        # ax5.plot(time, state_matrix[:, 4])
 
-        ax5.plot(time, state_matrix[:, 4])
+        # ax6.plot(time, state_matrix[:, 5])
 
-        ax6.plot(time, state_matrix[:, 5])
+        # plt.show()
 
-        plt.show()
-
-
-    
+        return state_matrix
 
         # plt.plot(time, state_matrix[:, 3])
         # plt.xlabel("Time [s]")
@@ -289,14 +288,22 @@ def main():
     path = "rocket_data.csv"
     dimensions = np.loadtxt(path, delimiter=",")
 
-
     # Tolerances are +/- unless otherwise defined
     x_tolerance    = 2/1000 # [m]
     mass_tolerance = 0.1    # [kg]
 
     TXE2_thrust = 15.5 * 1000 # [N]
+
     dt = 0.01
-    for i in range(1):
+    num_iterations = 6000
+    start_time = 0
+    end_time = num_iterations * dt
+    time = np.arange(start_time, end_time, dt)
+
+    N = 200
+    x_list = z_list = vx_list = vz_list = theta_list = q_list = np.array([])
+
+    for i in range(N):
         halcyon = Rocket(masses=mass_data, mass_locations=x_data, 
                          mass_tolerance=mass_tolerance, mass_location_tolerance=x_tolerance, 
                          aerodynamic_dimensions=dimensions, thrust=TXE2_thrust)
@@ -304,7 +311,27 @@ def main():
         # print(f"Halcyon x_cp = {halcyon.x_cp}")
         # print(f"Halcyon inertia = {halcyon.inertia}")
 
-        halcyon.integration_sim(dt=dt, num_iterations=6000)
+        halcyon_state = halcyon.integration_sim(dt=dt, num_iterations=num_iterations)
+
+        x_list = np.append(x_list, halcyon_state[0])
+        z_list = np.append(z_list, halcyon_state[1])
+        vx_list = np.append(vx_list, halcyon_state[2])
+        vz_list = np.append(vz_list, halcyon_state[3])
+        theta_list = np.append(theta_list, halcyon_state[4])
+        q_list = np.append(q_list, halcyon_state[5])
+    
+
+    fig, (ax1, ax2, ax3, ax4, ax5, ax6) = plt.subplots(6, 1)
+    ax1.hist(x_list, bins=50)
+    ax2.hist(z_list, bins=50)
+    ax3.hist(vx_list, bins=50)
+    ax4.hist(vz_list, bins=50)
+    ax5.hist(theta_list, bins=50)
+    ax6.hist(q_list, bins=50)
+    plt.show()
+
+
+        # also plot static margin to verify consistently positive, and return alpha from state_dot
 
         # print(halcyon.integration_sim(dt=0.01, num_iterations=50))
 
