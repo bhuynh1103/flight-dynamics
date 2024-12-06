@@ -36,6 +36,7 @@ class Rocket:
         self.CNq = self.CNalpha * self.static_margin
         self.CMq = self.CNalpha * self.aero_moment + 2*self.CNalpha*self.x_cg*self.x_cp - self.CNalpha*self.x_cg**2
 
+
     def barrowman_eqns(self, x_data): # Outputs (Cp, CNalpha, S_ref, aero_moment)
         # Ref "The Theoretical Prediction of the Center of Pressure", James Barrowman
         # Assume small angles of attack (< 10 deg)
@@ -226,9 +227,10 @@ class Rocket:
             gust_state_next[2]
         ])
 
-        return state_dot
+        return [state_dot, alpha]
     
     def integration_sim(self, dt, num_iterations):
+        alpha_list = np.array([])
         for i in range(num_iterations):
             if i == 0:
                 state = np.zeros(9)
@@ -237,7 +239,8 @@ class Rocket:
                 state[1] = 0.01
                 state_matrix = np.zeros((num_iterations, 6)) # Matrix with the states as columns and times as rows
 
-            dx = self.state_dot(state=state, dt=0.01, gust_intensity=4.5)
+            [dx, alpha] = self.state_dot(state=state, dt=0.01, gust_intensity=4.5)
+            alpha_list = np.append(alpha_list, alpha)
             state[0:6] = dx[0:6]*dt + state[0:6]
             state[6:9] = dx[6:9]
             state_matrix[i, :] = state[0:6]
@@ -273,7 +276,7 @@ class Rocket:
         # print(f"gust_w = {state[8]}")
         # print()
 
-        return state_matrix 
+        return (state_matrix, alpha_list)
 
         # plt.plot(time, state_matrix[:, 3])
         # plt.xlabel("Time [s]")
@@ -301,8 +304,10 @@ def main():
     end_time = num_iterations * dt
     time = np.arange(start_time, end_time, dt)
 
-    N = 10
-    x_list = z_list = vx_list = vz_list = theta_list = q_list = np.array([])
+    N = 100
+    # x_list = z_list = vx_list = vz_list = theta_list = q_list = np.array([])
+    fig1, (ax1, ax2, ax3, ax4, ax5, ax6, ax7) = plt.subplots(7, 1)
+
 
     for i in range(N):
         halcyon = Rocket(masses=mass_data, mass_locations=x_data, 
@@ -312,23 +317,70 @@ def main():
         # print(f"Halcyon x_cp = {halcyon.x_cp}")
         # print(f"Halcyon inertia = {halcyon.inertia}")
 
-        halcyon_state = halcyon.integration_sim(dt=dt, num_iterations=num_iterations)
+        [halcyon_state, alpha_list] = halcyon.integration_sim(dt=dt, num_iterations=num_iterations) # Returns the state matrix for the given halcyon object
 
-        x_list = halcyon_state[0, :]
-        z_list = halcyon_state[1, :]
-        vx_list = np.append(vx_list, halcyon_state[2])
-        vz_list = np.append(vz_list, halcyon_state[3])
-        theta_list = np.append(theta_list, halcyon_state[4])
-        q_list = np.append(q_list, halcyon_state[5])
+        # Plot the progression of each state with time, for the given halcyon object, and eventually overlay 
+        start_time = 0
+        end_time = num_iterations * dt
+        time = np.arange(start_time, end_time, dt)
+
+
+        ax1.plot(time, halcyon_state[:, 0], alpha=0.4)
+
+        ax2.plot(time, halcyon_state[:, 1], alpha=0.4)
+
+        ax3.plot(time, halcyon_state[:, 2], alpha=0.4)
+
+        ax4.plot(time, halcyon_state[:, 3], alpha=0.4)
+
+        ax5.plot(time, halcyon_state[:, 4], alpha=0.4)
+
+        ax6.plot(time, halcyon_state[:, 5], alpha=0.4)
+
+        ax7.plot(time, alpha_list, alpha=0.4)
+
+    ax1.set_xlabel('Time (s)')
+    ax1.set_ylabel('$x$ (m)')
+
+    ax2.set_xlabel('Time (s)')
+    ax2.set_ylabel('$z$ (m)')
+
+    ax3.set_xlabel('Time (s)')
+    ax3.set_ylabel('$v_x$ (m/s)')
+
+    ax4.set_xlabel('Time (s)')
+    ax4.set_ylabel('$v_z$ (m/s)')
+
+    ax5.set_xlabel('Time (s)')
+    ax5.set_ylabel('$\\theta$ (rad)')
+
+    ax6.set_xlabel('Time (s)')
+    ax6.set_ylabel('q (rad/s)')
+
+    ax7.set_xlabel('Time (s)')
+    ax7.set_ylabel('$\\alpha$ (rad)')
+
+    fig1.suptitle('Rocket States vs. Time for %d Halcyon Objects' % N)
+    plt.show()
+
+
+
+
+        # x_list = np.append(x_list, halcyon_state[-1][0])
+        # z_list = np.append(z_list, halcyon_state[1, :])
+        # vx_list = np.append(vx_list, halcyon_state[2])
+        # vz_list = np.append(vz_list, halcyon_state[3])
+        # theta_list = np.append(theta_list, halcyon_state[4])
+        # q_list = np.append(q_list, halcyon_state[5])
     
-
-    fig, (ax1, ax2, ax3, ax4, ax5, ax6) = plt.subplots(6, 1)
+    # halcyons_list = np.arange(0, N, 1)
+    # fig, (ax1, ax2, ax3, ax4, ax5, ax6) = plt.subplots(6, 1)
     # ax1.hist(x_list, bins=50)
-    ax2.hist(z_list, bins=50)
-    # ax3.hist(vx_list, bins=50)
-    # ax4.hist(vz_list, bins=50)
-    # ax5.hist(theta_list, bins=50)
-    # ax6.hist(q_list, bins=50)
+    # # ax2.hist(z_list, bins=50)
+    # # ax3.hist(vx_list, bins=50)
+    # # ax4.hist(vz_list, bins=50)
+    # # ax5.hist(theta_list, bins=50)
+    # # ax6.hist(q_list, bins=50)
     plt.show()
 
 
