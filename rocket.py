@@ -32,6 +32,10 @@ class Rocket:
         # Get moment of inertia about CG
         self.inertia = self.get_inertia() # [kg*m^2]
 
+        # Stability Derivatives
+        self.CNq = self.CNalpha * self.static_margin
+        self.CMq = self.CNalpha * self.aero_moment + 2*self.CNalpha*self.x_cg*self.x_cp - self.CNalpha*self.x_cg**2
+
     def barrowman_eqns(self, x_data): # Outputs (Cp, CNalpha, S_ref, aero_moment)
         # Ref "The Theoretical Prediction of the Center of Pressure", James Barrowman
         # Assume small angles of attack (< 10 deg)
@@ -177,6 +181,7 @@ class Rocket:
         I = self.inertia
         S = self.S_ref
         CNalpha = self.CNalpha
+        CNq = self.CNq
         Cd = self.drag_coefficient
         sm = self.static_margin
 
@@ -194,7 +199,8 @@ class Rocket:
         alpha = np.arctan2(w, u) # angle of attack
 
         q_bar = 0.5 * rho * V**2 # dynamic pressure
-        L = q_bar * S * CNalpha * alpha # lift
+        N = q_bar * S * (CNalpha*alpha + CNq*q) # normal force
+        L = N # lift
         D = q_bar * S * Cd
 
         # Derivatives
@@ -239,13 +245,28 @@ class Rocket:
         end_time = num_iterations * dt
         time = np.arange(start_time, end_time, dt)
 
-        print(state_matrix[:, 1])
+        fig, (ax1, ax2, ax3, ax4, ax5, ax6) = plt.subplots(6, 1)
 
-        plt.plot(time, state_matrix[:, 4])
-        plt.xlabel("Time [s]")
-        plt.ylabel("theta [rad]")
-        plt.grid()
+        ax1.plot(time, state_matrix[:, 0])
+
+        ax2.plot(time, state_matrix[:, 1])
+
+        ax3.plot(time, state_matrix[:, 2])
+
+        ax4.plot(time, state_matrix[:, 3])
+
+        ax5.plot(time, state_matrix[:, 4])
+
+        ax6.plot(time, state_matrix[:, 5])
+
         plt.show()
+
+
+    
+
+        # plt.plot(time, state_matrix[:, 3])
+        # plt.xlabel("Time [s]")
+        # plt.ylabel("v_z [m/s]")
 
         # print(f"x = {state[0]}")
         # print(f"z = {state[1]}")
