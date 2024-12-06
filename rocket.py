@@ -202,12 +202,13 @@ class Rocket:
         N = q_bar * S * (CNalpha*alpha + CNq*q) # normal force
         L = N # lift
         D = q_bar * S * Cd
+        g = 9.81 # [m/s^2]
 
         # Derivatives
         x_dot     = vx
         z_dot     = vz
         vx_dot    = ( T*np.cos(theta) - D*np.cos(psi) - L*np.sin(psi) ) / M
-        vz_dot    = ( T*np.sin(theta) - D*np.sin(psi) + L*np.cos(psi) ) / M
+        vz_dot    = ( T*np.sin(theta) - D*np.sin(psi) + L*np.cos(psi) - M*g) / M
         theta_dot = q
         q_dot     = ( -L*np.cos(alpha)*sm -D*np.sin(alpha)*sm ) / I
 
@@ -261,12 +262,6 @@ class Rocket:
 
         # plt.show()
 
-        return state_matrix 
-
-        # plt.plot(time, state_matrix[:, 3])
-        # plt.xlabel("Time [s]")
-        # plt.ylabel("v_z [m/s]")
-
         # print(f"x = {state[0]}")
         # print(f"z = {state[1]}")
         # print(f"vx = {state[2]}")
@@ -277,6 +272,12 @@ class Rocket:
         # print(f"gust_v = {state[7]}")
         # print(f"gust_w = {state[8]}")
         # print()
+
+        return state_matrix 
+
+        # plt.plot(time, state_matrix[:, 3])
+        # plt.xlabel("Time [s]")
+        # plt.ylabel("v_z [m/s]")
 
 def main():
     path = "mass_placement.csv"
