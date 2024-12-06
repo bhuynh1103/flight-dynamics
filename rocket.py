@@ -306,7 +306,7 @@ def main():
     end_time = num_iterations * dt
     time = np.arange(start_time, end_time, dt)
 
-    N = 500
+    N = 10
     x_list = z_list = vx_list = vz_list = theta_list = q_list = alpha_list = np.array([])
 
     runs = np.empty(shape=(N, num_iterations, 7)) # states as columns, time as rows, every matrix layer is a run
@@ -404,12 +404,33 @@ def main():
     fig2, (ax11, ax22, ax33, ax44, ax55, ax66, ax77) = plt.subplots(7, 1)
 
     ax11.hist(x_list, bins=50)
+    ax11.set_xlabel('distance from launch (m)')
+    ax11.set_ylabel('count')
+
     ax22.hist(z_list, bins=50)
+    ax22.set_xlabel('altitude (m)')
+    ax22.set_ylabel('count')
+
     ax33.hist(vx_list, bins=50)
+    ax33.set_xlabel('horizotnal velocity (m/s)')
+    ax33.set_ylabel('count')
+
     ax44.hist(vz_list, bins=50)
+    ax44.set_xlabel('vertical velocity (m/s)')
+    ax44.set_ylabel('count')
+
     ax55.hist(theta_list, bins=50)
+    ax55.set_xlabel('pitch angle (rad)')
+    ax55.set_ylabel('count')
+
     ax66.hist(q_list, bins=50)
+    ax66.set_xlabel('pitch rate (rad/s)')
+    ax66.set_ylabel('count')
+
     ax77.hist(alpha_list, bins=50)
+    ax77.set_xlabel('angle of attack (rad)')
+    ax77.set_ylabel('count')
+
 
     fig2.suptitle('Distribution of Final Rocket States')
     plt.show()
