@@ -184,8 +184,8 @@ class Rocket:
         rho = rho_sl * np.exp(-beta*z) # [kg/m^3]
 
 
-        u = vx * np.cos(theta) + vz * np.sin(theta) # - gust_u # velocity in x-body axis
-        w = vx * np.sin(theta) - vz * np.cos(theta) # - gust_w # velocity in z-body axis
+        u = vx * np.cos(theta) + vz * np.sin(theta)  - gust_u # velocity in x-body axis
+        w = vx * np.sin(theta) - vz * np.cos(theta)  - gust_w # velocity in z-body axis
 
         V = np.sqrt(u**2 + w**2) # Freestream velocity
 
@@ -230,7 +230,8 @@ class Rocket:
                 state_matrix = np.zeros((num_iterations, 6))
 
             dx = self.state_dot(state=state, dt=0.01, gust_intensity=4.5)
-            state[0:5] = dx[0:5]*dt + state[0:5]
+            state[0:6] = dx[0:6]*dt + state[0:6]
+            state[6:9] = dx[6:9]
             # state_matrix[num_iterations-1, :] = state[0:5]
 
             print(f"x = {state[0]}")
@@ -269,7 +270,7 @@ def main():
         # print(f"Halcyon x_cp = {halcyon.x_cp}")
         # print(f"Halcyon inertia = {halcyon.inertia}")
 
-        halcyon.integration_sim(dt=0.1, num_iterations=100)
+        halcyon.integration_sim(dt=0.01, num_iterations=6000)
 
         # print(halcyon.integration_sim(dt=0.01, num_iterations=50))
 
