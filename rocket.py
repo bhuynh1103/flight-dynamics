@@ -234,7 +234,7 @@ class Rocket:
                 state[4] = np.deg2rad(90)
                 state[3] = 0.001
                 state[1] = 0.01
-                state_matrix = np.zeros((num_iterations, 6))
+                state_matrix = np.zeros((num_iterations, 6)) # Matrix with the states as columns and times as rows
 
             dx = self.state_dot(state=state, dt=0.01, gust_intensity=4.5)
             state[0:6] = dx[0:6]*dt + state[0:6]
@@ -261,7 +261,7 @@ class Rocket:
 
         # plt.show()
 
-        return state_matrix
+        return state_matrix 
 
         # plt.plot(time, state_matrix[:, 3])
         # plt.xlabel("Time [s]")
@@ -300,7 +300,7 @@ def main():
     end_time = num_iterations * dt
     time = np.arange(start_time, end_time, dt)
 
-    N = 200
+    N = 10
     x_list = z_list = vx_list = vz_list = theta_list = q_list = np.array([])
 
     for i in range(N):
@@ -313,8 +313,8 @@ def main():
 
         halcyon_state = halcyon.integration_sim(dt=dt, num_iterations=num_iterations)
 
-        x_list = np.append(x_list, halcyon_state[0])
-        z_list = np.append(z_list, halcyon_state[1])
+        x_list = halcyon_state[0, :]
+        z_list = halcyon_state[1, :]
         vx_list = np.append(vx_list, halcyon_state[2])
         vz_list = np.append(vz_list, halcyon_state[3])
         theta_list = np.append(theta_list, halcyon_state[4])
@@ -322,12 +322,12 @@ def main():
     
 
     fig, (ax1, ax2, ax3, ax4, ax5, ax6) = plt.subplots(6, 1)
-    ax1.hist(x_list, bins=50)
+    # ax1.hist(x_list, bins=50)
     ax2.hist(z_list, bins=50)
-    ax3.hist(vx_list, bins=50)
-    ax4.hist(vz_list, bins=50)
-    ax5.hist(theta_list, bins=50)
-    ax6.hist(q_list, bins=50)
+    # ax3.hist(vx_list, bins=50)
+    # ax4.hist(vz_list, bins=50)
+    # ax5.hist(theta_list, bins=50)
+    # ax6.hist(q_list, bins=50)
     plt.show()
 
 
