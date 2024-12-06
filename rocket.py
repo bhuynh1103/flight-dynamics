@@ -304,6 +304,8 @@ def main():
     N = 500
     x_list = z_list = vx_list = vz_list = theta_list = q_list = np.array([])
 
+    runs = np.empty(shape=(N, num_iterations, 6)) # states as columns, time as rows, every matrix layer is a run
+
     for i in range(N):
         halcyon = Rocket(masses=mass_data, mass_locations=x_data, 
                          mass_tolerance=mass_tolerance, mass_location_tolerance=x_tolerance, 
@@ -314,25 +316,60 @@ def main():
 
         halcyon_state = halcyon.integration_sim(dt=dt, num_iterations=num_iterations)
 
-        # print(halcyon_state[-1])
+        # x_list = np.append(x_list, halcyon_state[-1][0])
+        # z_list = np.append(z_list, halcyon_state[-1][1])
+        # vx_list = np.append(vx_list, halcyon_state[-1][2])
+        # vz_list = np.append(vz_list, halcyon_state[-1][3])
+        # theta_list = np.append(theta_list, halcyon_state[-1][4])
+        # q_list = np.append(q_list, halcyon_state[-1][5])
 
-        x_list = np.append(x_list, halcyon_state[-1][0])
-        z_list = np.append(z_list, halcyon_state[-1][1])
-        vx_list = np.append(vx_list, halcyon_state[-1][2])
-        vz_list = np.append(vz_list, halcyon_state[-1][3])
-        theta_list = np.append(theta_list, halcyon_state[-1][4])
-        q_list = np.append(q_list, halcyon_state[-1][5])
+        runs[i] = halcyon_state
 
         print(i)
     
+    mean = np.mean(runs, axis=0)
+    std = np.std(runs, axis=0)
+
+    # print(np.shape(time))
+    # print(np.shape(mean[:, 0]))
 
     fig, (ax1, ax2, ax3, ax4, ax5, ax6) = plt.subplots(6, 1)
-    ax1.hist(x_list, bins=50)
-    ax2.hist(z_list, bins=50)
-    ax3.hist(vx_list, bins=50)
-    ax4.hist(vz_list, bins=50)
-    ax5.hist(theta_list, bins=50)
-    ax6.hist(q_list, bins=50)
+    plt.subplot(611)
+    plt.plot(time, mean[:, 0] + 2 * std[:, 0], 'b')
+    plt.plot(time, mean[:, 0] - 2 * std[:, 0], 'b')
+    plt.plot(time, mean[:, 0], 'r')
+
+    plt.subplot(612)
+    plt.plot(time, mean[:, 1] + 2 * std[:, 1], 'b')
+    plt.plot(time, mean[:, 1] - 2 * std[:, 1], 'b')
+    plt.plot(time, mean[:, 1], 'r')
+
+    plt.subplot(613)
+    plt.plot(time, mean[:, 2] + 2 * std[:, 2], 'b')
+    plt.plot(time, mean[:, 2] - 2 * std[:, 2], 'b')
+    plt.plot(time, mean[:, 2], 'r')
+
+    plt.subplot(614)
+    plt.plot(time, mean[:, 3] + 2 * std[:, 3], 'b')
+    plt.plot(time, mean[:, 3] - 2 * std[:, 3], 'b')
+    plt.plot(time, mean[:, 3], 'r')
+
+    plt.subplot(615)
+    plt.plot(time, mean[:, 4] + 2 * std[:, 4], 'b')
+    plt.plot(time, mean[:, 4] - 2 * std[:, 4], 'b')
+    plt.plot(time, mean[:, 4], 'r')
+
+    plt.subplot(616)
+    plt.plot(time, mean[:, 5] + 2 * std[:, 5], 'b')
+    plt.plot(time, mean[:, 5] - 2 * std[:, 5], 'b')
+    plt.plot(time, mean[:, 5], 'r')
+
+    # ax1.hist(x_list, bins=50)
+    # ax2.hist(z_list, bins=50)
+    # ax3.hist(vx_list, bins=50)
+    # ax4.hist(vz_list, bins=50)
+    # ax5.hist(theta_list, bins=50)
+    # ax6.hist(q_list, bins=50)
     plt.show()
 
 
