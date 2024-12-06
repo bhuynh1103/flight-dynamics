@@ -43,7 +43,6 @@ class Rocket:
         location_tolerance = self.location_tolerance
         
         # Geometry w/ uncertainty
-        # TODO: make the locations of the components a function of the object parameters
         nose_L = x_data[0] + np.random.uniform(low=-location_tolerance, high=location_tolerance)
         body_L = x_data[1] + np.random.uniform(low=-location_tolerance, high=location_tolerance)
         body_D = x_data[2] + np.random.uniform(low=-location_tolerance, high=location_tolerance)
@@ -239,50 +238,15 @@ class Rocket:
                 state[4] = np.deg2rad(90)
                 state[3] = 0.001
                 state[1] = 0.01
-                state_matrix = np.zeros((num_iterations, 7)) # Matrix with the states as columns and times as rows
+                state_matrix = np.zeros((num_iterations, 7)) # State Matrix with the states as columns and times as rows
 
             dx = self.state_dot(state=state, dt=0.01, gust_intensity=4.5)
             state[0:6] = dx[0:6]*dt + state[0:6] # Integrate the first 6 states
             state[6] = dx[6] # Storage for alpha
             state[7:9] = dx[7:9] # Last 3 states are gusts, not to be integrated
             state_matrix[i, :] = state[0:7] 
-        
-        # start_time = 0
-        # end_time = num_iterations * dt
-        # time = np.arange(start_time, end_time, dt)
-
-        # fig, (ax1, ax2, ax3, ax4, ax5, ax6) = plt.subplots(6, 1)
-
-        # ax1.plot(time, state_matrix[:, 0])
-
-        # ax2.plot(time, state_matrix[:, 1])
-
-        # ax3.plot(time, state_matrix[:, 2])
-
-        # ax4.plot(time, state_matrix[:, 3])
-
-        # ax5.plot(time, state_matrix[:, 4])
-
-        # ax6.plot(time, state_matrix[:, 5])
-
-        # plt.show()
-
-        # print(f"x = {state[0]}")
-        # print(f"z = {state[1]}")
-        # print(f"vx = {state[2]}")
-        # print(f"vz = {state[3]}")
-        # print(f"theta = {state[4]}")
-        # print(f"q = {state[5]}")
-        # print(f"gust_u = {state[6]}")
-        # print(f"gust_v = {state[7]}")
-        # print(f"gust_w = {state[8]}")
-        # print()
 
         return state_matrix
-
-        # plt.plot(time, state_matrix[:, 3])
-        # plt.xlabel("Time [s]")
-        # plt.ylabel("v_z [m/s]")
 
 def main():
     path = "mass_placement.csv"
@@ -306,18 +270,10 @@ def main():
     end_time = num_iterations * dt
     time = np.arange(start_time, end_time, dt)
 
-    N = 10
+    N = 500
     x_list = z_list = vx_list = vz_list = theta_list = q_list = alpha_list = np.array([])
 
     runs = np.empty(shape=(N, num_iterations, 7)) # states as columns, time as rows, every matrix layer is a run
-
-    # halcyon = Rocket(masses=mass_data, mass_locations=x_data, 
-    #                      mass_tolerance=mass_tolerance, mass_location_tolerance=x_tolerance, 
-    #                      aerodynamic_dimensions=dimensions, thrust=TXE2_thrust)
-    # [halcyon_state, alpha_list] = halcyon.integration_sim(dt=dt, num_iterations=num_iterations)
-
-    # alpha_runs = np.empty(shape=(N, num_iterations, np.size(alpha_list)))
-
 
     fig1, (ax1, ax2, ax3, ax4, ax5, ax6, ax7) = plt.subplots(7, 1)
 
@@ -326,9 +282,6 @@ def main():
         halcyon = Rocket(masses=mass_data, mass_locations=x_data, 
                          mass_tolerance=mass_tolerance, mass_location_tolerance=x_tolerance, 
                          aerodynamic_dimensions=dimensions, thrust=TXE2_thrust)
-        # print(f"Halcyon x_cg = {halcyon.x_cg}")
-        # print(f"Halcyon x_cp = {halcyon.x_cp}")
-        # print(f"Halcyon inertia = {halcyon.inertia}")
 
         halcyon_state = halcyon.integration_sim(dt=dt, num_iterations=num_iterations)
 
@@ -341,14 +294,10 @@ def main():
         alpha_list = np.append(alpha_list, halcyon_state[-1][6])
 
         runs[i] = halcyon_state
-        # print(i)
 
     
     mean = np.mean(runs, axis=0)
     std = np.std(runs, axis=0)
-
-    # print(np.shape(time))
-    # print(np.shape(mean[:, 0]))
 
     ax1.plot(time, mean[:, 0] + 2 * std[:, 0], 'b')
     ax1.plot(time, mean[:, 0] - 2 * std[:, 0], 'b')
@@ -431,21 +380,8 @@ def main():
     ax77.set_xlabel('angle of attack (rad)')
     ax77.set_ylabel('count')
 
-
     fig2.suptitle('Distribution of Final Rocket States')
     plt.show()
-
-
-        # also plot static margin to verify consistently positive, and return alpha from state_dot
-
-        # print(halcyon.integration_sim(dt=0.01, num_iterations=50))
-
-        # print()
-
-        # if i == 1:
-        #     state = np.zeros(1, 9)
-        # dx = halcyon.state_dot(state=state, dt=0.01, gust_intensity=4.5)
-        # state = state + dx*dt
         
 
 if __name__ == "__main__":
